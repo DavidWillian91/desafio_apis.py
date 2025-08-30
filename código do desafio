@@ -1,0 +1,66 @@
+from pydantic import BaseModel
+from typing import Optional
+
+class Athlete(BaseModel):
+    id: int
+    name: str
+    age: int
+    level: str  # iniciante, intermediário, avançado
+
+class Workout(BaseModel):
+    id: int
+    name: str
+    duration_minutes: int
+    difficulty: str  # fácil, médio, difícil
+
+
+from fastapi import FastAPI, HTTPException
+from models import Athlete, Workout
+from typing import List
+
+app = FastAPI(title="CrossFit API", version="1.0")
+
+# Banco de dados em memória (lista)
+athletes: List[Athlete] = []
+workouts: List[Workout] = []
+
+# --- ROTAS ATLETAS ---
+@app.post("/athletes/", response_model=Athlete)
+async def create_athlete(athlete: Athlete):
+    # Verifica se já existe atleta com mesmo ID
+    for a in athletes:
+        if a.id == athlete.id:
+            raise HTTPException(status_code=400, detail="Atleta já existe")
+    athletes.append(athlete)
+    return athlete
+
+@app.get("/athletes/", response_model=List[Athlete])
+async def list_athletes():
+    return athletes
+
+@app.get("/athletes/{athlete_id}", response_model=Athlete)
+async def get_athlete(athlete_id: int):
+    for a in athletes:
+        if a.id == athlete_id:
+            return a
+    raise HTTPException(status_code=404, detail="Atleta não encontrado")
+
+# --- ROTAS TREINOS ---
+@app.post("/workouts/", response_model=Workout)
+async def create_workout(workout: Workout):
+    for w in workouts:
+        if w.id == workout.id:
+            raise HTTPException(status_code=400, detail="Treino já existe")
+    workouts.append(workout)
+    return workout
+
+@app.get("/workouts/", response_model=List[Workout])
+async def list_workouts():
+    return workouts
+
+@app.get("/workouts/{workout_id}", response_model=Workout)
+async def get_workout(workout_id: int):
+    for w in workouts:
+        if w.id == workout_id:
+            return w
+    raise HTTPException(status_code=404, detail="Treino não encontrado")
